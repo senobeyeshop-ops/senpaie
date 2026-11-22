@@ -9,6 +9,8 @@ export interface Entreprise {
   taux_at: number; taux_ipm_salarie: number; taux_ipm_employeur: number; plafond_ipm: number | null;
   periodicite_sociale: 'mensuelle' | 'trimestrielle';
   convention_id: string | null;
+  prefixe_matricule: string;
+  compteur_matricule: number;
   plan: string; max_employes: number; essai_fin: string; abonnement_fin: string | null;
 }
 export type Role = 'proprietaire' | 'gestionnaire' | 'lecteur';

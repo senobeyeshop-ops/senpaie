@@ -18,6 +18,7 @@ export default function Parametres() {
 
   async function enregistrer() {
     if (f.nom.trim().length < 2) { toast.error('Raison sociale obligatoire.'); return; }
+    if (!/^[A-Z0-9-]{0,6}$/.test((f.prefixe_matricule ?? '').toUpperCase())) { toast.error('Préfixe des matricules : 6 caractères maximum (lettres, chiffres, tiret).'); return; }
     setEnvoi(true);
     const { error } = await supabase.from('entreprises').update({
       nom: f.nom.trim(), ninea: f.ninea, rccm: f.rccm, adresse: f.adresse, telephone: f.telephone, email: f.email,
@@ -25,6 +26,7 @@ export default function Parametres() {
       taux_ipm_salarie: Number(f.taux_ipm_salarie), taux_ipm_employeur: Number(f.taux_ipm_employeur),
       plafond_ipm: f.plafond_ipm ? Number(f.plafond_ipm) : null, periodicite_sociale: f.periodicite_sociale,
       convention_id: f.convention_id || null,
+      prefixe_matricule: (f.prefixe_matricule ?? 'MAT').toUpperCase(),
     }).eq('id', f.id);
     setEnvoi(false);
     if (error) { toast.error(messageErreur(error)); return; }
@@ -58,6 +60,8 @@ export default function Parametres() {
             <Champ label="IPM — part salariale (%)" {...pctChamp('taux_ipm_salarie')} aide="0 si pas d'IPM" />
             <Champ label="IPM — part patronale (%)" {...pctChamp('taux_ipm_employeur')} />
             <Champ label="Plafond IPM (FCFA)" type="number" value={String(f.plafond_ipm ?? '')} onChange={(e) => setF({ ...f, plafond_ipm: e.target.value ? Number(e.target.value) : null })} aide="Vide = sans plafond" />
+            <Champ label="Préfixe des matricules" maxLength={6} value={f.prefixe_matricule ?? ''} onChange={(e) => setF({ ...f, prefixe_matricule: e.target.value.toUpperCase() })}
+              aide={`Prochain matricule : ${(f.prefixe_matricule ?? '')}${String((courante!.compteur_matricule ?? 0) + 1).padStart(4, '0')}`} />
             <Liste label="Convention collective par défaut" value={f.convention_id ?? ''} onChange={(e) => setF({ ...f, convention_id: e.target.value || null })}>
               <option value="">— Aucune —</option>{(convs.data ?? []).map((c) => <option key={c.id} value={c.id}>{c.nom}</option>)}
             </Liste>

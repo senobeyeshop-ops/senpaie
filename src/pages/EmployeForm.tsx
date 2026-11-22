@@ -15,7 +15,7 @@ import { categoriesDe, listerConventions, parCollege, type CategorieConv } from 
 
 const montant = z.coerce.number().int('Montant entier en FCFA').min(0, 'Montant positif');
 const schema = z.object({
-  matricule: z.string().trim().min(1, 'Obligatoire').max(20),
+  matricule: z.string().trim().toUpperCase().max(20).regex(/^[A-Z0-9\-_/]*$/, 'Lettres, chiffres, - _ / uniquement'),
   prenom: z.string().trim().min(1, 'Obligatoire').max(80),
   nom: z.string().trim().min(1, 'Obligatoire').max(80),
   sexe: z.enum(['M', 'F']).nullable(),
@@ -94,13 +94,15 @@ export default function EmployeForm() {
     if (r.data.date_sortie && r.data.date_sortie < r.data.date_embauche) { setErreurs({ date_sortie: 'Doit être après la date d\'embauche' }); return; }
     if (sousMinimum && !confirm(`Le salaire de base est inférieur au minimum de la catégorie (${fcfa(catChoisie!.salaire_mensuel)}). Enregistrer quand même ?`)) return;
     setErreurs({}); setEnvoi(true);
-    const ligne = { ...r.data, entreprise_id: courante!.id };
+    if (id && !r.data.matricule) { setErreurs({ matricule: 'Le matricule ne peut pas être vide' }); return; }
+    // Matricule vide à la création → attribué automatiquement par la base (préfixe + compteur)
+    const ligne = { ...r.data, matricule: r.data.matricule || null, entreprise_id: courante!.id };
     const res = id
-      ? await supabase.from('employes').update(ligne).eq('id', id).select('id').single()
-      : await supabase.from('employes').insert(ligne).select('id').single();
+      ? await supabase.from('employes').update(ligne).eq('id', id).select('id, matricule').single()
+      : await supabase.from('employes').insert(ligne).select('id, matricule').single();
     setEnvoi(false);
     if (res.error) { toast.error(messageErreur(res.error)); return; }
-    toast.success(id ? 'Employé mis à jour' : 'Employé ajouté');
+    toast.success(id ? 'Employé mis à jour' : `Employé ajouté — matricule ${res.data.matricule}`);
     if (!id) nav(`/employes/${res.data.id}`, { replace: true }); else recharger();
   }
 
@@ -117,7 +119,9 @@ export default function EmployeForm() {
         <fieldset disabled={!peutEcrire} className="space-y-6">
           <Carte titre="Identité">
             <div className="grid gap-4 md:grid-cols-3">
-              <Champ label="Matricule" required {...txt('matricule')} />
+              <Champ label="Matricule" required={!!id} {...txt('matricule')}
+                placeholder={id ? '' : `Automatique (${courante?.prefixe_matricule ?? 'MAT'}0001…)`}
+                aide={id ? undefined : 'Laissez vide : SenPaie attribue le prochain numéro'} />
               <Champ label="Prénom" required {...txt('prenom')} />
               <Champ label="Nom" required {...txt('nom')} />
               <Liste label="Sexe" value={f.sexe ?? ''} onChange={(e) => maj('sexe', (e.target.value || null) as Form['sexe'])}>
