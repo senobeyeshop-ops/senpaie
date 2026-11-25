@@ -63,9 +63,10 @@ describe('TRIMF', () => {
 });
 
 describe('bulletin complet', () => {
-  it('non-cadre 300 000 + transport 26 000 exonéré', () => {
+  it('non-cadre 300 000 + transport 26 000 exonéré (hors brut)', () => {
     const r = calculerBulletin(employe(), [{ rubrique: transport, montant: 26000 }], ent, p);
-    expect(r.brut).toBe(326000);
+    expect(r.brut).toBe(300000);
+    expect(r.detail.hors_brut).toBe(26000);
     expect(r.brut_cotisable).toBe(300000);
     expect(r.ipres_rg_sal).toBe(16800);
     expect(r.ipres_rg_pat).toBe(25200);
@@ -76,7 +77,7 @@ describe('bulletin complet', () => {
     // IR (méthode DGID) : 300 000 − min(30 % ; 75 000) = 225 000 → × 12 = 2 700 000
     // barème : 174 000 + (2 700 000 − 1 500 000) × 30 % = 534 000 → / 12 = 44 500
     expect(r.ir).toBe(44500);
-    expect(r.net_a_payer).toBe(326000 - 16800 - 44500 - 500);
+    expect(r.net_a_payer).toBe(300000 - 16800 - 44500 - 500 + 26000);
     expect(r.cout_employeur).toBe(326000 + 25200 + 4410 + 630 + 9000);
   });
 
@@ -84,7 +85,21 @@ describe('bulletin complet', () => {
     const r = calculerBulletin(employe(), [{ rubrique: transport, montant: 30000 }], ent, p);
     expect(r.brut_cotisable).toBe(304000);
     expect(r.brut_imposable).toBe(304000);
+    expect(r.brut).toBe(304000);
+    expect(r.detail.hors_brut).toBe(26000);
+    expect(r.net_a_payer - r.brut + r.ipres_rg_sal + r.ir + r.trimf).toBe(26000);
     expect(r.detail.alertes.length).toBe(1);
+  });
+
+  it('prime de rendement hors brut : ni cotisée ni imposée, ajoutée au net', () => {
+    const rend = { id: 'r2', code: 'PRIME_REND', libelle: 'Prime de rendement', type: 'gain' as const, soumis_cotisations: true, soumis_impot: true, plafond_exoneration: null };
+    const sans = calculerBulletin(employe(), [], ent, p);
+    const avec = calculerBulletin(employe(), [{ rubrique: rend, montant: 50000 }], ent, p);
+    expect(avec.brut).toBe(sans.brut);
+    expect(avec.ir).toBe(sans.ir);
+    expect(avec.ipres_rg_sal).toBe(sans.ipres_rg_sal);
+    expect(avec.net_a_payer).toBe(sans.net_a_payer + 50000);
+    expect(avec.cout_employeur).toBe(sans.cout_employeur + 50000);
   });
 
   it('cadre : RCC plafonné à 1 296 000 et RG à 432 000', () => {
