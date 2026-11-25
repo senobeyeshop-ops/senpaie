@@ -8,6 +8,7 @@ import { useRequete, verifier } from '../lib/useRequete';
 import { Badge, Bouton, Carte, Case, Champ, Entete, Liste, Tableau } from '../components/ui';
 import type { Rubrique } from '../paie/types';
 import { listerConventions } from '../lib/conventions';
+import { estHorsBrut } from '../paie/moteur';
 
 export default function Parametres() {
   const { courante, recharger, peutEcrire } = useEntreprise();
@@ -103,7 +104,7 @@ function Rubriques() {
       <Tableau entetes={['Code', 'Libellé', 'Type', 'Cotisable', 'Imposable', 'Plafond exonération', '']}>
         {(data ?? []).map((r) => (
           <tr key={r.id} className={r.actif ? '' : 'opacity-50'}>
-            <td className="px-4 py-2 font-mono text-xs">{r.code}</td><td className="px-4 py-2">{r.libelle}</td><td className="px-4 py-2">{libType[r.type]}</td>
+            <td className="px-4 py-2 font-mono text-xs">{r.code}</td><td className="px-4 py-2">{r.libelle}</td><td className="px-4 py-2">{estHorsBrut(r) ? <>Gain <Badge couleur="vert">hors brut</Badge></> : libType[r.type]}</td>
             <td className="px-4 py-2">{r.soumis_cotisations ? 'Oui' : <Badge couleur="bleu">Non</Badge>}</td><td className="px-4 py-2">{r.soumis_impot ? 'Oui' : <Badge couleur="bleu">Non</Badge>}</td>
             <td className="px-4 py-2">{r.plafond_exoneration ?? '—'}</td>
             <td className="px-4 py-2 text-right">{peutEcrire && <button className="text-marque-700 hover:underline" onClick={() => basculer(r)}>{r.actif ? 'Désactiver' : 'Activer'}</button>}</td>
