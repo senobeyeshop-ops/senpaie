@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useEntreprise } from '../context/EntrepriseProvider';
@@ -23,6 +24,10 @@ export default function Bulletin() {
   const { b, p } = data;
   const emp = b.detail.employe ?? {};
   const lignes = b.detail.lignes ?? [];
+  const lignesBrut = lignes.filter((l) => !l.hors_brut);
+  const lignesHorsBrut = lignes.filter((l) => l.hors_brut);
+  const horsBrut = Number(b.detail.hors_brut ?? 0);
+  const cellule = 'border border-slate-200 px-2 py-1';
 
   return (
     <div className="min-h-screen bg-slate-100 py-6">
@@ -67,23 +72,43 @@ export default function Bulletin() {
             </tr>
           </thead>
           <tbody>
-            {lignes.map((l, i) => (
-              <tr key={i} className={l.code === 'IPRES_RG' ? 'border-t-2 border-slate-400' : ''}>
+            {lignesBrut.map((l, i) => (
+              <Fragment key={i}>
+                {l.code === 'IPRES_RG' && (
+                  <tr className="bg-slate-50 font-semibold">
+                    <td className={cellule}>Salaire brut</td><td className={cellule} /><td className={cellule} />
+                    <td className={`${cellule} text-right`}>{nombre(b.brut)}</td><td className={cellule} /><td className={cellule} />
+                  </tr>
+                )}
+                <tr className={l.code === 'IPRES_RG' ? 'border-t-2 border-slate-400' : ''}>
                 <td className="border border-slate-200 px-2 py-1">{l.libelle}</td>
                 <td className="border border-slate-200 px-2 py-1 text-right">{l.base != null ? nombre(l.base) : ''}</td>
                 <td className="border border-slate-200 px-2 py-1 text-right">{l.taux != null ? pct(l.taux) : ''}</td>
                 <td className="border border-slate-200 px-2 py-1 text-right">{l.gain ? nombre(l.gain) : ''}</td>
                 <td className="border border-slate-200 px-2 py-1 text-right">{l.retenue ? nombre(l.retenue) : ''}</td>
                 <td className="border border-slate-200 px-2 py-1 text-right">{l.patronal ? nombre(l.patronal) : ''}</td>
+                </tr>
+              </Fragment>
+            ))}
+            {lignesHorsBrut.length > 0 && (
+              <tr className="border-t-2 border-slate-400 bg-slate-50 font-semibold">
+                <td className={cellule} colSpan={6}>Indemnités hors brut (non soumises)</td>
+              </tr>
+            )}
+            {lignesHorsBrut.map((l, i) => (
+              <tr key={`hb${i}`}>
+                <td className={cellule}>{l.libelle}</td><td className={cellule} /><td className={cellule} />
+                <td className={`${cellule} text-right`}>{l.gain ? nombre(l.gain) : ''}</td><td className={cellule} /><td className={cellule} />
               </tr>
             ))}
           </tbody>
         </table>
 
-        <section className="mt-3 grid grid-cols-4 gap-2 text-center">
+        <section className={`mt-3 grid ${horsBrut > 0 ? 'grid-cols-5' : 'grid-cols-4'} gap-2 text-center`}>
           <Total t="Salaire brut" v={b.brut} />
-          <Total t="Total retenues" v={b.brut - b.net_a_payer} />
-          <Total t="Charges patronales" v={b.cout_employeur - b.brut} />
+          <Total t="Total retenues" v={b.brut + horsBrut - b.net_a_payer} />
+          {horsBrut > 0 && <Total t="Indemnités hors brut" v={horsBrut} />}
+          <Total t="Charges patronales" v={b.cout_employeur - b.brut - horsBrut} />
           <div className="rounded bg-marque-700 p-2 text-white"><p className="text-[10px] uppercase">Net à payer</p><p className="text-base font-bold">{nombre(b.net_a_payer)} FCFA</p></div>
         </section>
         <p className="mt-2 text-[11px]">Mode de paiement : {libMode[emp.mode_paiement ?? ''] ?? '—'} · Brut imposable : {nombre(b.brut_imposable)} · Coût total employeur : {nombre(b.cout_employeur)} FCFA</p>
