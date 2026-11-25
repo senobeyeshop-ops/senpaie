@@ -35,8 +35,11 @@ export function Layout() {
   return (
     <div className="min-h-screen md:flex">
       <aside className={`no-print fixed inset-y-0 left-0 z-30 w-64 transform bg-marque-900 text-white transition md:static md:translate-x-0 ${menuOuvert ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="flex h-16 items-center gap-2 px-5 text-xl font-bold">
-          <span className="rounded-md bg-or px-1.5 text-marque-900">SP</span> SenPaie
+        <div className="p-3">
+          <div className="relative h-40 overflow-hidden rounded-xl bg-white">
+            <img src="/LOGO%20SENPAIE.jpg" alt="SenPaie — La paie sénégalaise" style={{ width: 470 }}
+              className="absolute left-1/2 top-1/2 max-w-none -translate-x-1/2 -translate-y-1/2" />
+          </div>
         </div>
         {entreprises.length > 1 && (
           <div className="px-4 pb-3">
