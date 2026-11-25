@@ -35,18 +35,22 @@ export function EntrepriseProvider({ children }: { children: ReactNode }) {
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState<string | null>(null);
 
+  // Ne dépend que de l'identifiant : le rafraîchissement du jeton Supabase (au retour sur l'onglet)
+  // crée un nouvel objet user mais ne doit ni recharger ni réafficher l'écran de chargement,
+  // sinon la page en cours (ex. formulaire employé) est démontée et la saisie perdue.
+  const userId = user?.id;
   const recharger = useCallback(async () => {
-    if (!user) return;
-    setChargement(true); setErreur(null);
+    if (!userId) return;
+    setErreur(null);
     const { data, error } = await supabase.from('membres')
-      .select('role, entreprises(*)').eq('user_id', user.id);
+      .select('role, entreprises(*)').eq('user_id', userId);
     if (error) { setErreur(messageErreur(error)); setChargement(false); return; }
     const liste = (data ?? [])
       .filter((m) => m.entreprises)
       .map((m) => ({ ...(m.entreprises as unknown as Entreprise), role: m.role as Role }));
     setEntreprises(liste);
     setChargement(false);
-  }, [user]);
+  }, [userId]);
 
   useEffect(() => { recharger(); }, [recharger]);
 
