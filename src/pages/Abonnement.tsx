@@ -8,9 +8,9 @@ import { Badge, Bouton, Carte, Champ, Entete } from '../components/ui';
 
 // Formules (prix indicatifs, à ajuster) — les clés sont vendues sur la boutique Chariow
 export const PLANS = [
-  { code: 'starter', nom: 'Starter', employes: 10, mensuel: '9 900', annuel: '99 000', aVie: '249 000', pour: 'Très petites entreprises, commerces' },
-  { code: 'pro', nom: 'Pro', employes: 50, mensuel: '24 900', annuel: '249 000', aVie: '599 000', pour: 'PME en croissance' },
-  { code: 'entreprise', nom: 'Entreprise / Cabinet', employes: 300, mensuel: '49 900', annuel: '499 000', aVie: '1 190 000', pour: 'Cabinets comptables, PME structurées' },
+  { code: 'starter', nom: 'Starter', employes: 10, mensuel: '3 000', annuel: '25 000', aVie: '62 500', pour: 'Très petites entreprises, commerces' },
+  { code: 'pro', nom: 'Pro', employes: 50, mensuel: '6 000', annuel: '50 000', aVie: '125 000', pour: 'PME en croissance' },
+  { code: 'entreprise', nom: 'Entreprise / Cabinet', employes: 300, mensuel: '9 000', annuel: '75 000', aVie: '187 500', pour: 'Cabinets comptables, PME structurées' },
 ];
 
 export default function Abonnement() {
@@ -60,7 +60,7 @@ export default function Abonnement() {
             <h3 className="mt-2 text-lg font-bold">{p.nom}</h3>
             <p className="text-sm text-slate-500">{p.pour}</p>
             <p className="mt-4 text-2xl font-bold">{p.mensuel} <span className="text-sm font-normal">FCFA / mois</span></p>
-            <p className="text-sm text-slate-500">ou {p.annuel} FCFA / an (2 mois offerts)</p>
+            <p className="text-sm text-slate-500">ou {p.annuel} FCFA / an (plus de 3 mois offerts)</p>
             <p className="mt-1 text-sm font-semibold text-marque-700">ou {p.aVie} FCFA une seule fois — licence à vie</p>
             <ul className="mt-4 space-y-1 text-sm"><li>✓ Jusqu'à {p.employes} employés</li><li>✓ Bulletins illimités</li><li>✓ VRS, BRS, IPRES, CSS</li><li>✓ Exports Excel</li></ul>
             {LIEN_ACHAT && <a href={LIEN_ACHAT} target="_blank" rel="noopener noreferrer" className="mt-5 block rounded-lg bg-marque-700 py-2 text-center text-sm font-medium text-white hover:bg-marque-900">Acheter (Wave / Orange Money)</a>}
