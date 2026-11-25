@@ -39,6 +39,8 @@ export interface Rubrique {
   soumis_impot: boolean;
   plafond_exoneration: number | null;
   actif?: boolean;
+  // Versée en plus du net, hors salaire brut (non cotisable, non imposable dans la limite du plafond)
+  hors_brut?: boolean;
 }
 
 export interface Employe {
@@ -80,6 +82,8 @@ export interface LigneBulletin {
   gain?: number;
   retenue?: number;
   patronal?: number;
+  // Ligne d'indemnité hors brut (affichée après les cotisations)
+  hors_brut?: boolean;
 }
 
 export interface ResultatBulletin {
@@ -112,5 +116,7 @@ export interface ResultatBulletin {
       reduction_famille_annuelle: number;
     };
     alertes: string[];
+    // Total des indemnités hors brut ajoutées au net
+    hors_brut?: number;
   };
 }
