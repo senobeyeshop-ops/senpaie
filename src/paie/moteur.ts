@@ -10,6 +10,13 @@ import type {
 const arrondi = (n: number) => Math.round(n);
 const plafonne = (montant: number, plafond: number) => Math.max(0, Math.min(montant, plafond));
 
+// Rubriques versées hors brut : elles s'ajoutent au net à payer sans entrer
+// dans le salaire brut (ni cotisations, ni IR/TRIMF, ni CFCE), dans la limite
+// de leur plafond d'exonération s'il existe (le surplus est réintégré au brut).
+export const CODES_HORS_BRUT = ['IND_TRANSP', 'PRIME_REND'];
+export const estHorsBrut = (r: { code: string; type: string; hors_brut?: boolean | null }) =>
+  r.type === 'gain' && (r.hors_brut ?? CODES_HORS_BRUT.includes(r.code));
+
 /**
  * Nombre de parts fiscales — Guide fiscal des PME (DGID), annexe 1 :
  *  - célibataire, divorcé, veuf sans enfant à charge ............ 1
@@ -105,7 +112,8 @@ export function calculerBulletin(
   if (employe.salaire_base < 0) throw new Error('Salaire de base négatif');
 
   // 1) Gains ------------------------------------------------------------
-  let brut = 0, brutCotisable = 0, brutImposable = 0, autresRetenues = 0;
+  let brut = 0, brutCotisable = 0, brutImposable = 0, autresRetenues = 0, horsBrut = 0;
+  const lignesHorsBrut: LigneBulletin[] = [];
 
   const ajouterGain = (code: string, libelle: string, montant: number, cotisable: boolean, imposable: boolean) => {
     brut += montant;
@@ -123,7 +131,19 @@ export function calculerBulletin(
     }
     if (montant === 0) continue;
 
-    if (r.type === 'gain') {
+    if (r.type === 'gain' && estHorsBrut(r)) {
+      // Indemnité hors brut : ajoutée au net ; au-delà du plafond, le surplus entre dans le brut
+      const exonere = r.plafond_exoneration != null ? Math.min(montant, r.plafond_exoneration) : montant;
+      const surplus = montant - exonere;
+      if (exonere > 0) {
+        horsBrut += exonere;
+        lignesHorsBrut.push({ code: r.code, libelle: r.libelle, gain: arrondi(exonere), hors_brut: true });
+      }
+      if (surplus > 0) {
+        ajouterGain(r.code + '_SUP', r.libelle + ' (au-delà du plafond)', surplus, true, true);
+        alertes.push(r.libelle + ' : ' + arrondi(surplus) + " FCFA au-delà du plafond d'exonération réintégrés au brut.");
+      }
+    } else if (r.type === 'gain') {
       // Part exonérée jusqu'au plafond, le surplus redevient cotisable et imposable
       if (r.plafond_exoneration != null && (!r.soumis_cotisations || !r.soumis_impot)) {
         const exonere = Math.min(montant, r.plafond_exoneration);
@@ -196,12 +216,14 @@ export function calculerBulletin(
     }
   }
   autresRetenues = arrondi(autresRetenues);
+  horsBrut = arrondi(horsBrut);
+  lignes.push(...lignesHorsBrut);
 
   // 5) Totaux ------------------------------------------------------------
   const totalRetenuesSal = ipresRgSal + ipresRccSal + ipmSal + ir + trimf + autresRetenues;
-  const net = brut - totalRetenuesSal;
+  const net = brut - totalRetenuesSal + horsBrut;
   if (net < 0) alertes.push('Le net à payer est négatif : vérifiez les avances et retenues.');
-  const coutEmployeur = brut + ipresRgPat + ipresRccPat + cssPf + cssAt + ipmPat + cfce;
+  const coutEmployeur = brut + horsBrut + ipresRgPat + ipresRccPat + cssPf + cssAt + ipmPat + cfce;
 
   return {
     brut,
@@ -233,6 +255,7 @@ export function calculerBulletin(
         reduction_famille_annuelle: arrondi(reduction),
       },
       alertes,
+      hors_brut: horsBrut,
     },
   };
 }
